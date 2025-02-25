@@ -13,9 +13,11 @@ To install and run the TextEditor, follow these steps:
 1. Clone the repository or download the source code.
 2. Navigate to the TextEditor directory.
 3. Compile the source code using gcc or any other C compiler.
+``` gcc TextEditor.c -o TextEditor ```
 
 ## Running the Project
 After compiling the source code, you can run the TextEditor with the following command:
+``` ./TextEditor ```
 
 ## Usage
 - The editor will open in the terminal.
