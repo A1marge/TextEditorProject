@@ -24,14 +24,15 @@ struct editorConfig E;
 
 //** Function Declarations **//
 
-void enableRawMode();                    // Turns on raw mode
-void disableRawMode();                   // Restores normal mode when exiting
-void die(const char *s);                 // Prints error messages and exits program
-char editorReadKey();                    // Wait for a keypress then return it
-void editorProcessKeypress();            // Waits for a keypress then processes it
-void editorRefreshScreen();              // Erase the screen
-void editorDrawRows();                   // Draws column of ~ on left hand side
-int getWindowSize(int *rows, int *cols); // Gets the size of the terminal window
+void enableRawMode();                        // Turns on raw mode
+void disableRawMode();                       // Restores normal mode when exiting
+void die(const char *s);                     // Prints error messages and exits program
+char editorReadKey();                        // Wait for a keypress then return it
+void editorProcessKeypress();                // Waits for a keypress then processes it
+void editorRefreshScreen();                  // Erase the screen
+void editorDrawRows();                       // Draws column of ~ on left hand side
+int getWindowSize(int *rows, int *cols);     // Gets the size of the terminal window
+int getCursorPosition(int *rows, int *cols); // Retrieves the cursor positon form the terminal
 
 //** Main Function *//
 
@@ -113,9 +114,11 @@ int getWindowSize(int *rows, int *cols)
 {
     struct winsize ws;
 
-    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0)
+    if (1 || ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0)
     {
-        return -1;
+        if (write(STDOUT_FILENO, "\x1b[999C\x1b[999B", 12) != 12) // Move the cursor to the bottom right of the screen
+            return -1;
+        return getCursorPosition(rows, cols);
     }
     else
     {
@@ -123,6 +126,31 @@ int getWindowSize(int *rows, int *cols)
         *rows = ws.ws_row;
         return 0;
     }
+}
+
+int getCursorPosition(int *rows, int *cols)
+{
+    char buf[32];
+    unsigned int i = 0;
+
+    // Attempts to retrieve cursor positon from terminal using an escape sequence
+    if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4)
+        return -1;
+
+    while (i < sizeof(buf) - 1)
+    {
+        if (read(STDIN_FILENO, &buf[i], 1) != 1)
+            break;
+        if (buf[i] == 'R')
+            break;
+        i++;
+    }
+    buf[i] = '\0';
+
+    if (buf[0] != '\x1b' || buf[1] != '[')
+        return -1;
+    if (sscanf(&buf[2], "%d;%d", rows, cols) != 2)
+        return -1;
 }
 
 //** Output **//
